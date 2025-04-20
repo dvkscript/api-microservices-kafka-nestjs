@@ -1,0 +1,1 @@
+export const KAFKA_NAME = Symbol("KAFKA_SERVICE_NAME");

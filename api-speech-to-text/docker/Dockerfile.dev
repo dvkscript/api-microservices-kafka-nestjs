@@ -1,0 +1,46 @@
+# Base image hỗ trợ GPU (CUDA)
+FROM nvidia/cuda:12.2.0-runtime-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=Asia/Ho_Chi_Minh \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# --- Cài đặt hệ thống & Python ---
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    git \
+    ffmpeg \
+    build-essential \
+    libssl-dev \
+    libffi-dev \
+    libgl1 \
+    libglib2.0-0 \
+    libsndfile1 \
+    software-properties-common \
+    && add-apt-repository ppa:deadsnakes/ppa -y \
+    && apt-get update && apt-get install -y \
+    python3.11 \
+    python3.11-venv \
+    python3.11-dev \
+    python3.11-distutils \
+    python3-pip \
+    && apt-get clean
+
+# Trỏ python3 -> python3.11
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
+
+# Nâng cấp pip
+RUN python3 -m pip install --upgrade pip
+
+# Tạo thư mục làm việc
+WORKDIR /app
+
+# Sao chép toàn bộ source code
+COPY . /app
+
+# Cài Python dependencies cho XTTS
+RUN pip install --root-user-action=ignore --force-reinstall --ignore-installed -r requirements.txt
+
+CMD ["python3", "main.py"]

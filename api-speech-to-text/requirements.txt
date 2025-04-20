@@ -1,0 +1,7 @@
+torch
+soundfile
+transformers
+torchaudio
+aiokafka
+python-dotenv
+pydub 

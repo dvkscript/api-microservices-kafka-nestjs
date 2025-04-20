@@ -1,0 +1,7 @@
+torch
+soundfile
+transformers
+torchaudio
+TTS @ git+https://github.com/dvkscript/TTS.git@87381aacaff2cfbdb2d1037a99e987cd0dd49623
+aiokafka
+python-dotenv

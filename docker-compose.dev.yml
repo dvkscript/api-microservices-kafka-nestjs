@@ -1,0 +1,155 @@
+version: '3.8'
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.7.0
+    hostname: zookeeper
+    container_name: kafka-zookeeper-dev
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  broker:
+    image: confluentinc/cp-server:7.7.0
+    hostname: broker
+    container_name: kafka-broker-dev
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
+      CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: broker:29092
+      CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS: 1
+      CONFLUENT_METRICS_ENABLE: 'true'
+      CONFLUENT_SUPPORT_CUSTOMER_ID: 'anonymous'
+
+      KAFKA_MESSAGE_MAX_BYTES: 10485760         # 10MB
+      KAFKA_REPLICA_FETCH_MAX_BYTES: 10485760   # 10MB
+      KAFKA_MAX_REQUEST_SIZE: 10485760          # 10MB
+
+
+  kafka-control-center:
+    image: confluentinc/cp-enterprise-control-center:7.7.0
+    hostname: kafka-control-center
+    container_name: kafka-control-center-dev
+    depends_on:
+      - broker
+    ports:
+      - "9021:9021"
+    environment:
+      CONTROL_CENTER_BOOTSTRAP_SERVERS: 'broker:29092'
+      CONTROL_CENTER_REPLICATION_FACTOR: 1
+      CONTROL_CENTER_INTERNAL_TOPICS_PARTITIONS: 1
+      CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
+      CONFLUENT_METRICS_TOPIC_REPLICATION: 1
+      PORT: 9021
+
+  db:
+    container_name: db-postgres
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: khoakkkk
+      POSTGRES_DB: db_microservices
+    ports:
+      - "5432:5432"
+
+  tts-api:
+    container_name: text-to-speech-api-dev
+    build:
+      context: ./api-text-to-speech
+      dockerfile: docker/Dockerfile.dev
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    runtime: nvidia 
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    depends_on:
+      - broker
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./api-text-to-speech/src:/app
+    env_file:
+      - ./api-text-to-speech/.env
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    
+  stt-api:
+    container_name: speech-to-text-api-dev
+    build:
+      context: ./api-speech-to-text
+      dockerfile: docker/Dockerfile.dev
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    runtime: nvidia 
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    depends_on:
+      - broker
+    ports:
+      - "8003:8003"
+    volumes:
+      - ./api-speech-to-text/src:/app
+    env_file:
+      - ./api-speech-to-text/.env
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+
+  upload-api:
+    container_name: upload-api-dev
+    build:
+      context: ./api-upload
+      dockerfile: docker/Dockerfile.dev
+    depends_on:
+      - broker
+      - db
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./api-upload:/app
+    env_file:
+      - ./api-upload/.env.development.local
+      
+  gateway-api:
+    container_name: gateway-api-dev
+    build:
+      context: ./api-gateway
+      dockerfile: docker/Dockerfile.dev
+    depends_on:
+      - broker
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./api-gateway:/app
+    env_file:
+      - ./api-gateway/.env.development.local
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
