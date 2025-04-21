@@ -87,6 +87,7 @@ services:
       - 8.8.4.4
     depends_on:
       - broker
+      - zookeeper
     ports:
       - "8002:8002"
     volumes:
@@ -114,6 +115,7 @@ services:
       - 8.8.4.4
     depends_on:
       - broker
+      - zookeeper
     ports:
       - "8003:8003"
     volumes:
@@ -130,6 +132,7 @@ services:
       dockerfile: docker/Dockerfile.dev
     depends_on:
       - broker
+      - zookeeper
       - db
     ports:
       - "8001:8001"
@@ -145,6 +148,11 @@ services:
       dockerfile: docker/Dockerfile.dev
     depends_on:
       - broker
+      - zookeeper
+      - db
+      - tts-api
+      - stt-api
+      - upload-api
     ports:
       - "8000:8000"
     volumes:

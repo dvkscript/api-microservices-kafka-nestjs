@@ -60,7 +60,7 @@ class TextToSpeech:
 
         # Compile replacements
         self.compiled_replacements = [
-            (re.compile(re.escape(pattern), re.IGNORECASE), repl)
+            (re.compile(rf"\b{re.escape(pattern)}\b"), repl)
             for pattern, repl in self.replacements
         ]
         log_info("Model loaded successfully.")
@@ -108,13 +108,13 @@ class TextToSpeech:
             "8": "tám",
             "9": "chín"
         }
-
+    
         def replace_digits(match):
             number = match.group()
             return ' '.join(digit_map[d] for d in number) # Dùng cách này thay vì dùng replace là vì nó có thể thay dược nhiều số liên tiếp
 
         # Tìm tất cả các nhóm số trong văn bản và thay thế
-        return re.sub(r'\d+', replace_digits, text)
+        return re.sub(r'\d+', replace_digits, text.lower())
 
     def normalize_text(self, text):
         text = self.convert_number(text)
@@ -155,6 +155,7 @@ class TextToSpeech:
 
             if language == "vi":
                 text = self.normalize_text(text)
+                log_info(f"Text format: {text}")
 
             # Sinh audio từ văn bản
             log_info("Generating audio...")
@@ -173,7 +174,8 @@ class TextToSpeech:
             torchaudio.save(buffer, torch.tensor(out["wav"]).unsqueeze(0), 24000, format="wav")
             buffer.seek(0)
             buffer = buffer.read() 
-
+            # with open("output.wav", "wb") as f:
+            #     f.write(buffer)
             inference_time = round((time.time() - t0) * 1000)
             log_info(f"Audio generated in {inference_time} ms")
             return buffer, None  # ✅ Rõ ràng
