@@ -7,7 +7,7 @@ export class SttService {
         private readonly kafkaProducer: KafkaProducer,
     ) {}
 
-    async convertSpeechToText(file: Express.Multer.File): Promise<any> {
+    async convertSpeechToText(file: Express.Multer.File & { format: string }): Promise<any> {
         return await this.kafkaProducer.generateText(file)
     }
 }

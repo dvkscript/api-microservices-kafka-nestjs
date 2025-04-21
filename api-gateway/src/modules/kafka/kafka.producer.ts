@@ -53,9 +53,10 @@ export class KafkaProducer implements OnModuleInit {
     return await this.sendMessage(KafkaTopic.TTS_VOICE_CREATE, KafkaStep.GENERATE_FILE, { text })
   }
 
-  async generateText(file: Express.Multer.File): Promise<convertSpeechToTextEntity | null> {
+  async generateText(file: Express.Multer.File & { format: string }): Promise<convertSpeechToTextEntity | null> {
     const fileBase64 = file.buffer.toString('base64');
-    const format = file.mimetype.split('/')[1];
+    const format = file.format
+    
     return await this.sendMessage(KafkaTopic.STT_TEXT_CREATE, KafkaStep.GENERATE_FILE, { audio: fileBase64, format })
   }
 }
